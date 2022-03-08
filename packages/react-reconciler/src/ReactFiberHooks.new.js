@@ -366,12 +366,12 @@ function areHookInputsEqual(
 }
 
 export function renderWithHooks<Props, SecondArg>(
-  current: Fiber | null,
-  workInProgress: Fiber,
-  Component: (p: Props, arg: SecondArg) => any,
-  props: Props,
+  current: Fiber | null, // 当前页面正在渲染的node
+  workInProgress: Fiber, // 新的node，下次页面的更新
+  Component: (p: Props, arg: SecondArg) => any, // node对应的组件
+  props: Props, // 组件的props
   secondArg: SecondArg,
-  nextRenderLanes: Lanes,
+  nextRenderLanes: Lanes, // fiber渲染过期时间
 ): any {
   renderLanes = nextRenderLanes;
   currentlyRenderingFiber = workInProgress;
