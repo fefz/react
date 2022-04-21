@@ -13,10 +13,7 @@
 // Flags that can likely be deleted or landed without consequences
 // -----------------------------------------------------------------------------
 
-export const enableSuspenseServerRenderer = true;
-export const enableSelectiveHydration = true;
 export const warnAboutDeprecatedLifecycles = true;
-export const enableLazyElements = true;
 export const enableComponentStackLocations = true;
 export const disableSchedulerTimeoutBasedOnReactExpirationTime = false;
 export const enablePersistentOffscreenHostContainer = false;
@@ -27,6 +24,9 @@ export const enablePersistentOffscreenHostContainer = false;
 // Flags that can be probably deleted or landed, but might require extra effort
 // like migrating internal callers or performance testing.
 // -----------------------------------------------------------------------------
+
+// This is blocked on adding a symbol polyfill to www.
+export const enableSymbolFallbackForWWW = false;
 
 // This rolled out to 10% public in www, so we should be able to land, but some
 // internal tests need to be updated. The open source behavior is correct.
@@ -41,7 +41,7 @@ export const skipUnmountedBoundaries = true;
 export const enableSuspenseLayoutEffectSemantics = true;
 
 // TODO: Finish rolling out in www
-export const enableClientRenderFallbackOnHydrationMismatch = true;
+export const enableClientRenderFallbackOnTextMismatch = true;
 
 // TODO: Need to review this code one more time before landing
 export const enableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay = true;
@@ -95,16 +95,22 @@ export const enableLegacyFBSupport = false;
 // -----------------------------------------------------------------------------
 
 export const enableCache = __EXPERIMENTAL__;
+export const enableCacheElement = __EXPERIMENTAL__;
 
 export const enableTransitionTracing = false;
 
 // No known bugs, but needs performance testing
 export const enableLazyContextPropagation = false;
 
+// FB-only usage. The new API has different semantics.
+export const enableLegacyHidden = false;
+
 // Enables unstable_avoidThisFallback feature in Fiber
 export const enableSuspenseAvoidThisFallback = false;
 // Enables unstable_avoidThisFallback feature in Fizz
 export const enableSuspenseAvoidThisFallbackFizz = false;
+
+export const enableCPUSuspense = __EXPERIMENTAL__;
 
 // When a node is unmounted, recurse into the Fiber subtree and clean out
 // references. Each level cleans up more fiber fields than the previous level.
@@ -247,6 +253,7 @@ export const enableUpdaterTracking = __PROFILE__;
 
 // Only enabled in RN, related to enableComponentStackLocations
 export const disableNativeComponentFrames = false;
+export const enableServerContext = __EXPERIMENTAL__;
 
 // Internal only.
 export const enableGetInspectorDataForInstanceInProduction = false;

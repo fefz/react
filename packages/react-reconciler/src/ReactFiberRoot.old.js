@@ -7,6 +7,7 @@
  * @flow
  */
 
+import type {ReactNodeList} from 'shared/ReactTypes';
 import type {
   FiberRoot,
   SuspenseHydrationCallbacks,
@@ -14,7 +15,10 @@ import type {
 } from './ReactInternalTypes';
 import type {RootTag} from './ReactRootTags';
 import type {Cache} from './ReactFiberCacheComponent.old';
-import type {Transitions} from './ReactFiberTracingMarkerComponent.old';
+import type {
+  PendingSuspenseBoundaries,
+  Transition,
+} from './ReactFiberTracingMarkerComponent.old';
 
 import {noTimeout, supportsHydration} from './ReactFiberHostConfig';
 import {createHostRootFiber} from './ReactFiber.old';
@@ -39,8 +43,10 @@ import {createCache, retainCache} from './ReactFiberCacheComponent.old';
 
 export type RootState = {
   element: any,
-  cache: Cache | null,
-  transitions: Transitions | null,
+  isDehydrated: boolean,
+  cache: Cache,
+  pendingSuspenseBoundaries: PendingSuspenseBoundaries | null,
+  transitions: Set<Transition> | null,
 };
 
 function FiberRootNode(
@@ -59,7 +65,6 @@ function FiberRootNode(
   this.timeoutHandle = noTimeout;
   this.context = null;
   this.pendingContext = null;
-  this.isDehydrated = hydrate;
   this.callbackNode = null;
   this.callbackPriority = NoLane;
   this.eventTimes = createLaneMap(NoLanes);
@@ -128,6 +133,7 @@ export function createFiberRoot(
   containerInfo: any,
   tag: RootTag,
   hydrate: boolean,
+  initialChildren: ReactNodeList,
   hydrationCallbacks: null | SuspenseHydrationCallbacks,
   isStrictMode: boolean,
   concurrentUpdatesByDefaultOverride: null | boolean,
@@ -178,16 +184,20 @@ export function createFiberRoot(
     root.pooledCache = initialCache;
     retainCache(initialCache);
     const initialState: RootState = {
-      element: null,
+      element: initialChildren,
+      isDehydrated: hydrate,
       cache: initialCache,
       transitions: null,
+      pendingSuspenseBoundaries: null,
     };
     uninitializedFiber.memoizedState = initialState;
   } else {
     const initialState: RootState = {
-      element: null,
-      cache: null,
+      element: initialChildren,
+      isDehydrated: hydrate,
+      cache: (null: any), // not enabled yet
       transitions: null,
+      pendingSuspenseBoundaries: null,
     };
     uninitializedFiber.memoizedState = initialState;
   }

@@ -16,6 +16,7 @@ import type {
   MutableSourceVersion,
   MutableSource,
   StartTransitionOptions,
+  Wakeable,
 } from 'shared/ReactTypes';
 import type {SuspenseInstance} from './ReactFiberHostConfig';
 import type {WorkTag} from './ReactWorkTags';
@@ -24,9 +25,8 @@ import type {Flags} from './ReactFiberFlags';
 import type {Lane, Lanes, LaneMap} from './ReactFiberLane.old';
 import type {RootTag} from './ReactRootTags';
 import type {TimeoutHandle, NoTimeout} from './ReactFiberHostConfig';
-import type {Wakeable} from 'shared/ReactTypes';
 import type {Cache} from './ReactFiberCacheComponent.old';
-import type {Transitions} from './ReactFiberTracingMarkerComponent.new';
+import type {Transition} from './ReactFiberTracingMarkerComponent.new';
 
 // Unwind Circular: moved from ReactFiberHooks.old
 export type HookType =
@@ -213,8 +213,6 @@ type BaseFiberRootProperties = {|
   // Top context object, used by renderSubtreeIntoContainer
   context: Object | null,
   pendingContext: Object | null,
-  // Determines if we should attempt to hydrate on the initial mount
-  +isDehydrated: boolean,
 
   // Used by useMutableSource hook to avoid tearing during hydration.
   mutableSourceEagerHydrationData?: Array<
@@ -322,7 +320,7 @@ export type TransitionTracingCallbacks = {
 // The following fields are only used in transition tracing in Profile builds
 type TransitionTracingOnlyFiberRootProperties = {|
   transitionCallbacks: null | TransitionTracingCallbacks,
-  transitionLanes: Array<Transitions>,
+  transitionLanes: Array<Array<Transition> | null>,
 |};
 
 // Exported FiberRoot type includes all properties,

@@ -83,6 +83,26 @@ const startScriptSrc = stringToPrecomputedChunk('<script src="');
 const startModuleSrc = stringToPrecomputedChunk('<script type="module" src="');
 const endAsyncScript = stringToPrecomputedChunk('" async=""></script>');
 
+/**
+ * This escaping function is designed to work with bootstrapScriptContent only.
+ * because we know we are escaping the entire script. We can avoid for instance
+ * escaping html comment string sequences that are valid javascript as well because
+ * if there are no sebsequent <script sequences the html parser will never enter
+ * script data double escaped state (see: https://www.w3.org/TR/html53/syntax.html#script-data-double-escaped-state)
+ *
+ * While untrusted script content should be made safe before using this api it will
+ * ensure that the script cannot be early terminated or never terminated state
+ */
+function escapeBootstrapScriptContent(scriptText) {
+  if (__DEV__) {
+    checkHtmlStringCoercion(scriptText);
+  }
+  return ('' + scriptText).replace(scriptRegex, scriptReplacer);
+}
+const scriptRegex = /(<\/|<)(s)(cript)/gi;
+const scriptReplacer = (match, prefix, s, suffix) =>
+  `${prefix}${s === 's' ? '\\u0073' : '\\u0053'}${suffix}`;
+
 // Allows us to keep track of what we've already written so we can refer back to it.
 export function createResponseState(
   identifierPrefix: string | void,
@@ -102,7 +122,7 @@ export function createResponseState(
   if (bootstrapScriptContent !== undefined) {
     bootstrapChunks.push(
       inlineScriptWithNonce,
-      stringToChunk(escapeTextForBrowser(bootstrapScriptContent)),
+      stringToChunk(escapeBootstrapScriptContent(bootstrapScriptContent)),
       endInlineScript,
     );
   }
@@ -749,7 +769,7 @@ function pushStartOption(
     }
   }
 
-  if (selectedValue !== null) {
+  if (selectedValue != null) {
     let stringValue;
     if (value !== null) {
       if (__DEV__) {
@@ -782,8 +802,13 @@ function pushStartOption(
           break;
         }
       }
-    } else if (selectedValue === stringValue) {
-      target.push(selectedMarkerAttribute);
+    } else {
+      if (__DEV__) {
+        checkAttributeStringCoercion(selectedValue, 'select.value');
+      }
+      if ('' + selectedValue === stringValue) {
+        target.push(selectedMarkerAttribute);
+      }
     }
   } else if (selected) {
     target.push(selectedMarkerAttribute);

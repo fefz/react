@@ -113,7 +113,6 @@ import {
   disableModulePatternComponents,
   warnAboutDefaultPropsOnFunctionComponents,
   enableScopeAPI,
-  enableLazyElements,
   enableSuspenseAvoidThisFallbackFizz,
 } from 'shared/ReactFeatureFlags';
 
@@ -488,7 +487,7 @@ function renderSuspenseBoundary(
     // We use the safe form because we don't handle suspending here. Only error handling.
     renderNode(request, task, content);
     contentRootSegment.status = COMPLETED;
-    newBoundary.completedSegments.push(contentRootSegment);
+    queueCompletedSegment(newBoundary, contentRootSegment);
     if (newBoundary.pendingTasks === 0) {
       // This must have been the last segment we were waiting on. This boundary is now complete.
       // Therefore we won't need the fallback. We early return so that we don't have to create
@@ -1162,14 +1161,12 @@ function renderNodeDestructive(
         );
       // eslint-disable-next-line-no-fallthrough
       case REACT_LAZY_TYPE: {
-        if (enableLazyElements) {
-          const lazyNode: LazyComponentType<any, any> = (node: any);
-          const payload = lazyNode._payload;
-          const init = lazyNode._init;
-          const resolvedNode = init(payload);
-          renderNodeDestructive(request, task, resolvedNode);
-          return;
-        }
+        const lazyNode: LazyComponentType<any, any> = (node: any);
+        const payload = lazyNode._payload;
+        const init = lazyNode._init;
+        const resolvedNode = init(payload);
+        renderNodeDestructive(request, task, resolvedNode);
+        return;
       }
     }
 
@@ -1181,7 +1178,7 @@ function renderNodeDestructive(
     const iteratorFn = getIteratorFn(node);
     if (iteratorFn) {
       if (__DEV__) {
-        validateIterable(node, iteratorFn());
+        validateIterable(node, iteratorFn);
       }
       const iterator = iteratorFn.call(node);
       if (iterator) {
@@ -1430,6 +1427,29 @@ function abortTask(task: Task): void {
   }
 }
 
+function queueCompletedSegment(
+  boundary: SuspenseBoundary,
+  segment: Segment,
+): void {
+  if (
+    segment.chunks.length === 0 &&
+    segment.children.length === 1 &&
+    segment.children[0].boundary === null
+  ) {
+    // This is an empty segment. There's nothing to write, so we can instead transfer the ID
+    // to the child. That way any existing references point to the child.
+    const childSegment = segment.children[0];
+    childSegment.id = segment.id;
+    childSegment.parentFlushed = true;
+    if (childSegment.status === COMPLETED) {
+      queueCompletedSegment(boundary, childSegment);
+    }
+  } else {
+    const completedSegments = boundary.completedSegments;
+    completedSegments.push(segment);
+  }
+}
+
 function finishedTask(
   request: Request,
   boundary: Root | SuspenseBoundary,
@@ -1463,7 +1483,7 @@ function finishedTask(
         // If it is a segment that was aborted, we'll write other content instead so we don't need
         // to emit it.
         if (segment.status === COMPLETED) {
-          boundary.completedSegments.push(segment);
+          queueCompletedSegment(boundary, segment);
         }
       }
       if (boundary.parentFlushed) {
@@ -1482,8 +1502,8 @@ function finishedTask(
         // If it is a segment that was aborted, we'll write other content instead so we don't need
         // to emit it.
         if (segment.status === COMPLETED) {
+          queueCompletedSegment(boundary, segment);
           const completedSegments = boundary.completedSegments;
-          completedSegments.push(segment);
           if (completedSegments.length === 1) {
             // This is the first time since we last flushed that we completed anything.
             // We can schedule this boundary to emit its partially completed segments early

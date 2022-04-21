@@ -148,11 +148,11 @@ const Internals = {
 };
 
 function createRoot(
-  container: Container,
+  container: Element | DocumentFragment,
   options?: CreateRootOptions,
 ): RootType {
   if (__DEV__) {
-    if (!Internals.usingClientEntryPoint) {
+    if (!Internals.usingClientEntryPoint && !__UMD__) {
       console.error(
         'You are importing createRoot from "react-dom" which is not supported. ' +
           'You should instead import it from "react-dom/client".',
@@ -163,12 +163,12 @@ function createRoot(
 }
 
 function hydrateRoot(
-  container: Container,
+  container: Document | Element,
   initialChildren: ReactNodeList,
   options?: HydrateRootOptions,
 ): RootType {
   if (__DEV__) {
-    if (!Internals.usingClientEntryPoint) {
+    if (!Internals.usingClientEntryPoint && !__UMD__) {
       console.error(
         'You are importing hydrateRoot from "react-dom" which is not supported. ' +
           'You should instead import it from "react-dom/client".',

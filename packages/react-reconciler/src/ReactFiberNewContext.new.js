@@ -42,9 +42,10 @@ import is from 'shared/objectIs';
 import {createUpdate, ForceUpdate} from './ReactUpdateQueue.new';
 import {markWorkInProgressReceivedUpdate} from './ReactFiberBeginWork.new';
 import {
-  enableSuspenseServerRenderer,
   enableLazyContextPropagation,
+  enableServerContext,
 } from 'shared/ReactFeatureFlags';
+import {REACT_SERVER_CONTEXT_DEFAULT_VALUE_NOT_LOADED} from 'shared/ReactSymbols';
 
 const valueCursor: StackCursor<mixed> = createCursor(null);
 
@@ -132,9 +133,23 @@ export function popProvider(
   const currentValue = valueCursor.current;
   pop(valueCursor, providerFiber);
   if (isPrimaryRenderer) {
-    context._currentValue = currentValue;
+    if (
+      enableServerContext &&
+      currentValue === REACT_SERVER_CONTEXT_DEFAULT_VALUE_NOT_LOADED
+    ) {
+      context._currentValue = context._defaultValue;
+    } else {
+      context._currentValue = currentValue;
+    }
   } else {
-    context._currentValue2 = currentValue;
+    if (
+      enableServerContext &&
+      currentValue === REACT_SERVER_CONTEXT_DEFAULT_VALUE_NOT_LOADED
+    ) {
+      context._currentValue2 = context._defaultValue;
+    } else {
+      context._currentValue2 = currentValue;
+    }
   }
 }
 
@@ -279,10 +294,7 @@ function propagateContextChange_eager<T>(
     } else if (fiber.tag === ContextProvider) {
       // Don't scan deeper if this is a matching provider
       nextFiber = fiber.type === workInProgress.type ? null : fiber.child;
-    } else if (
-      enableSuspenseServerRenderer &&
-      fiber.tag === DehydratedFragment
-    ) {
+    } else if (fiber.tag === DehydratedFragment) {
       // If a dehydrated suspense boundary is in this subtree, we don't know
       // if it will have any context consumers in it. The best we can do is
       // mark it as having updates.
@@ -409,10 +421,7 @@ function propagateContextChanges<T>(
         }
         dep = dependency.next;
       }
-    } else if (
-      enableSuspenseServerRenderer &&
-      fiber.tag === DehydratedFragment
-    ) {
+    } else if (fiber.tag === DehydratedFragment) {
       // If a dehydrated suspense boundary is in this subtree, we don't know
       // if it will have any context consumers in it. The best we can do is
       // mark it as having updates.
